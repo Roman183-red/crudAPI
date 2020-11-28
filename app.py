@@ -26,7 +26,7 @@ def index():
     return render_template('index.html', title='Home')
 
 
-@app.route('/status')
+@app.route('/ping')
 def status():
     return 'app is running'
 
@@ -39,7 +39,7 @@ def users():
 
 @app.route('/user/<username>')
 def user(username):
-    user = User.query.filter(User.username==username).first()
+    user = User.query.filter(User.username == username).one_or_none()
     if not user:
         abort(404)
     return jsonify(str(user))
@@ -58,3 +58,29 @@ def create_user():
         db.session.rollback()
 
     return jsonify({'user': str(user)}), 200
+
+
+@app.route('/change', methods=['PUT'])
+def change_user():
+    if not request.json or not 'username' in request.json or not 'email' in request.json:
+        abort(400)
+    username = request.json['username']
+    email = request.json['email']
+
+    user = User.query.filter(User.username == username).one_or_none()
+    if not user:
+        abort(404)
+    try:
+        db.session.delete(user)
+        db.session.commit()
+    except:
+        db.session.rollback()
+
+    user = User(username=request.json['username'], email=request.json['email'])
+    try:
+        db.session.add(user)
+        db.session.commit()
+    except:
+        db.session.rollback()
+
+    return jsonify(str(user))
