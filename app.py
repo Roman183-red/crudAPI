@@ -61,7 +61,7 @@ def create_user():
 
 
 @app.route('/change', methods=['PUT'])
-def change_user():
+def put_change_user():
     if not request.json or not 'username' in request.json or not 'email' in request.json or not 'new_username' in request.json:
         abort(400)
     username = request.json['username']
@@ -77,3 +77,21 @@ def change_user():
         db.session.rollback()
 
     return jsonify(str(new_user))
+
+
+@app.route('/changes', methods=['PATCH'])
+def patch_change_user():
+    if not request.json or not 'username' in request.json or not 'email' in request.json or not 'new_username' in request.json or not 'new_email' in request.json:
+        abort(400)
+    username = request.json['username']
+    email = request.json['email']
+    user = User.query.filter(User.username == username).one_or_none()
+    try:
+        user.username = request.json['new_username']
+        user.email = request.json['new_email']
+        db.session.commit()
+    except Exception as ex:
+        print(f'Failed with {ex}')
+        db.session.rollback()
+
+    return jsonify(str(user))
