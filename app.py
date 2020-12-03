@@ -14,7 +14,7 @@ migrate = Migrate(app, db)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
+    email = db.Column(db.String(120), nullable=False)
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -62,25 +62,18 @@ def create_user():
 
 @app.route('/change', methods=['PUT'])
 def change_user():
-    if not request.json or not 'username' in request.json or not 'email' in request.json:
+    if not request.json or not 'username' in request.json or not 'email' in request.json or not 'new_username' in request.json:
         abort(400)
     username = request.json['username']
-    email = request.json['email']
 
     user = User.query.filter(User.username == username).one_or_none()
-    if not user:
-        abort(404)
+    new_user = User(username=request.json['new_username'], email=request.json['email'])
     try:
         db.session.delete(user)
+        db.session.add(new_user)
         db.session.commit()
-    except:
+    except Exception as ex:
+        print(f'Failed with {ex}')
         db.session.rollback()
 
-    user = User(username=request.json['username'], email=request.json['email'])
-    try:
-        db.session.add(user)
-        db.session.commit()
-    except:
-        db.session.rollback()
-
-    return jsonify(str(user))
+    return jsonify(str(new_user))
